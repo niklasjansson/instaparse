@@ -31,7 +31,7 @@
           :else (recur n (unchecked-multiply-int z y) (unchecked-multiply-int z z)))))))
 
 (defmacro hash-conj [premix-hash-v item]
-  `(unchecked-add-int (unchecked-multiply-int 31 ~premix-hash-v) (hash ~item)))  
+  `(unchecked-add-int (unchecked-multiply-int 31 ~premix-hash-v) (hash ~item)))
 
 (defn delve [v index]
   (loop [v (get-in v index)
@@ -45,30 +45,30 @@
     (= (count index) 1)
     (when (< (peek index) (dec (true-count v)))
       (delve v [(inc (peek index))]))
-    
+
     (< (peek index) (dec (true-count (get-in v (pop index)))))
     (delve v (conj (pop index) (inc (peek index))))
-    
+
     :else
     (recur v (pop index))))
 
 (defn flat-seq
-  ([v] (if (pos? (count v)) 
+  ([v] (if (pos? (count v))
          (flat-seq v (delve v [0]))
          nil))
   ([v index]
     (lazy-seq
-      (cons (get-in v index) 
-            (when-let [next-index (advance v index)] 
-              (flat-seq v next-index))))))  
+      (cons (get-in v index)
+            (when-let [next-index (advance v index)]
+              (flat-seq v next-index))))))
 
 (deftype AutoFlattenSeq [^PersistentVector v ^int premix-hashcode ^int hashcode
                          ^int cnt ^boolean dirty
                          ^:unsynchronized-mutable ^clojure.lang.ISeq cached-seq]
   Object
-  (toString [self] (.toString (seq self)))
-  (hashCode [self] hashcode)
-  (equals [self other]
+  (ToString [self] (.toString (seq self)))
+  (GetHashCode [self] hashcode)
+  (Equals [self other]
     (and (instance? AutoFlattenSeq other)
          (== hashcode (.hashcode ^AutoFlattenSeq other))
          (== cnt (.cnt ^AutoFlattenSeq other))
@@ -76,17 +76,17 @@
          (= v (.v ^AutoFlattenSeq other))))
   clojure.lang.IHashEq
   (hasheq [self] hashcode)
-  java.util.Collection
-  (iterator [self]
-    (if-let [^java.util.Collection s (seq self)]
-      (.iterator s)
-      (let [^java.util.Collection e ()]
-        (.iterator e))))
-  (size [self]
-    cnt)
-  (toArray [self]
-    (let [^java.util.Collection s (seq self)]
-      (.toArray s)))
+;;   java.util.Collection
+;;   (iterator [self]
+;;     (if-let [^java.util.Collection s (seq self)]
+;;       (.iterator s)
+;;       (let [^java.util.Collection e ()]
+;;         (.iterator e))))
+;;   (size [self]
+;;     cnt)
+;;   (toArray [self]
+;;     (let [^java.util.Collection s (seq self)]
+;;       (.toArray s)))
   clojure.lang.Sequential
   clojure.lang.ISeq
   (equiv [self other]
@@ -94,12 +94,12 @@
          (== cnt (count other))
          (or (== cnt 0)
              (= (seq self) other))))
-  (empty [self] (with-meta EMPTY (meta self))) 
+  (empty [self] (with-meta EMPTY (meta self)))
   (first [self] (first (seq self)))
   (next [self] (next (seq self)))
   (more [self] (rest (seq self)))
-  (cons [self obj]
-    (cons obj self))
+  ;(cons [self obj]
+  ;  (cons obj self))
   ConjFlat
   (conj-flat [self obj]
     (cond
@@ -117,7 +117,7 @@
               new-cnt (+ cnt (count obj))]
           (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash-bc phc new-cnt) new-cnt
                            true nil)))
-      :else 
+      :else
       (let [phc (hash-conj premix-hashcode obj)
             new-cnt (inc cnt)]
         (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash-bc phc new-cnt) new-cnt dirty nil))))
@@ -125,7 +125,7 @@
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.ILookup
-  (valAt [self key]    
+  (valAt [self key]
     (.valAt v key))
   (valAt [self key not-found]
     (.valAt v key not-found))
@@ -156,7 +156,7 @@
                 (loop [acc (int 1) i (int 0)]
                   (if (< i cnt)
                     (recur (unchecked-add-int (unchecked-multiply-int thirty-one acc)
-                                              (hash (v i)))                    
+                                              (hash (v i)))
                            (inc i))
                     acc)))
               (hash v)))
@@ -180,7 +180,7 @@
 (defn flat-vec-helper [acc v]
   (if-let [s (seq v)]
     (let [fst (first v)]
-      (if (afs? fst) 
+      (if (afs? fst)
         (recur (flat-vec-helper acc fst) (next v))
         (recur (conj! acc fst) (next v))))
     acc))
@@ -193,23 +193,23 @@
 (defprotocol GetVec
   (^PersistentVector get-vec [self]))
 
-(deftype FlattenOnDemandVector [v   ; ref containing PersistentVector or nil 
+(deftype FlattenOnDemandVector [v   ; ref containing PersistentVector or nil
                                 ^int hashcode
                                 ^int cnt
-                                flat] ; ref containing PersistentVector or nil                                
+                                flat] ; ref containing PersistentVector or nil
   GetVec
-  (get-vec [self] 
-           (when (not @flat)             
+  (get-vec [self]
+           (when (not @flat)
              (dosync
                (when (not @flat)
-                 (ref-set flat (with-meta (flat-vec @v) (meta @v))) 
+                 (ref-set flat (with-meta (flat-vec @v) (meta @v)))
                  (ref-set v nil)))) ; clear out v so it can be garbage collected
            @flat)
-                    
+
   Object
-  (toString [self] (.toString (get-vec self)))
-  (hashCode [self] hashcode)
-  (equals [self other]
+  (ToString [self] (.toString (get-vec self)))
+  (GetHashCode [self] hashcode)
+  (Equals [self other]
     (and (instance? FlattenOnDemandVector other)
          (== hashcode (.hashcode ^FlattenOnDemandVector other))
          (== cnt (.cnt ^FlattenOnDemandVector other))
@@ -217,20 +217,20 @@
          (= flat (.flat ^FlattenOnDemandVector other))))
   clojure.lang.IHashEq
   (hasheq [self] hashcode)
-  java.util.Collection
-  (iterator [self]
-    (.iterator (get-vec self)))
-  (size [self]
-    cnt)
-  (toArray [self]
-    (.toArray (get-vec self)))
+;;   java.util.Collection
+;;   (iterator [self]
+;;     (.iterator (get-vec self)))
+;;   (size [self]
+;;     cnt)
+;;   (toArray [self]
+;;     (.toArray (get-vec self)))
   clojure.lang.IPersistentCollection
   (equiv [self other]
-    (or 
+    (or
       (and (== hashcode (hash other))
            (== cnt (count other))
            (= (get-vec self) other))))
-  (empty [self] (with-meta [] (meta self))) 
+  (empty [self] (with-meta [] (meta self)))
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.IPersistentVector
@@ -240,10 +240,10 @@
     (.assocN (get-vec self) i val))
   (length [self]
     cnt)
-  (cons [self obj]
-    (conj (get-vec self) obj))
+;;   (cons [self obj]
+;;     (conj (get-vec self) obj))
   clojure.lang.IObj
-  (withMeta [self metamap]    
+  (withMeta [self metamap]
     (if @flat
       (FlattenOnDemandVector. (ref @v) hashcode cnt (ref (with-meta @flat metamap)))
       (FlattenOnDemandVector. (ref (with-meta @v metamap)) hashcode cnt (ref @flat))))
@@ -274,9 +274,9 @@
       (rseq (get-vec self))
       nil))
   clojure.lang.IPersistentStack
-  (peek [self] 
+  (peek [self]
     (peek (get-vec self)))
-  (pop [self] 
+  (pop [self]
     (pop (get-vec self)))
   clojure.lang.Associative
   (containsKey [self k]
@@ -286,24 +286,24 @@
   IKVReduce
   (kv-reduce [self f init]
     (.kvreduce (get-vec self) f init))
-  java.lang.Comparable
-  (compareTo [self that]
-    (.compareTo (get-vec self) that))
-  java.util.List
-  (get [self i] (nth (get-vec self) i))
-  (indexOf [self o] (.indexOf (get-vec self) o))
-  (lastIndexOf [self o] (.lastIndexOf (get-vec self) o))
-  (listIterator [self]
-    (.listIterator (get-vec self) 0))
-  (listIterator [self i]
-    (.listIterator (get-vec self) i))
-  (subList [self a z]
-    (.subList (get-vec self) a z))
+;;   java.lang.Comparable
+;;   (compareTo [self that]
+;;     (.compareTo (get-vec self) that))
+;;   java.util.List
+;;   (get [self i] (nth (get-vec self) i))
+;;   (indexOf [self o] (.indexOf (get-vec self) o))
+;;   (lastIndexOf [self o] (.lastIndexOf (get-vec self) o))
+;;   (listIterator [self]
+;;     (.listIterator (get-vec self) 0))
+;;   (listIterator [self i]
+;;     (.listIterator (get-vec self) i))
+;;   (subList [self a z]
+;;     (.subList (get-vec self) a z))
   )
 
 (defn convert-afs-to-vec [^AutoFlattenSeq afs]
   (cond
-    (.dirty afs) 
+    (.dirty afs)
     (if (cached? afs)
       (vec (seq afs))
       (FlattenOnDemandVector. (ref (.v afs))
@@ -311,4 +311,4 @@
                               (.cnt afs)
                               (ref nil)))
     :else
-    (.v afs)))    
+    (.v afs)))
